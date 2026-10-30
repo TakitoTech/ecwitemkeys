@@ -1,0 +1,51 @@
+{
+	"name": "ecwitemkeys",
+	// Compose orchestrates the container; the `app` service still builds the custom
+	// Dockerfile (see docker-compose.yml). Add sibling services there as needed.
+	// Podman: point the dev containers CLI at podman, e.g. set in VS Code settings
+	//   "dev.containers.dockerComposePath": "podman-compose"
+	//   "dev.containers.dockerPath": "podman"
+	// or run the rootless podman socket and use plain `docker compose`.
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspaces/ecwitemkeys",
+	"features": {
+		"ghcr.io/anthropics/devcontainer-features/claude-code:latest": {}
+	},
+	// Runs on the HOST before build: ensures a persistent ssh-agent + ~/.bashrc
+	// export so VS Code can forward the agent into the container (see the script).
+	"initializeCommand": "bash '${localWorkspaceFolder}/.devcontainer/init-host-ssh-agent.sh'",
+	// The container user is set on the compose service (`user: root`); the SELinux
+	// label-disable and workspace bind mount also live in docker-compose.yml, since
+	// runArgs/containerUser are not honored in the Compose flow.
+	"remoteUser": "root",
+	"forwardPorts": [
+		5173,
+		4173,
+		3000
+	],
+	"portsAttributes": {
+		"5173": {
+			"label": "vite dev"
+		},
+		"4173": {
+			"label": "vite preview"
+		},
+		"3000": {
+			"label": "playwright preview"
+		}
+	},
+	"mounts": [
+		"source=claude-code-config-${devcontainerId},target=/root/.claude,type=volume"
+	],
+	"postCreateCommand": "pnpm install && pnpm exec playwright install --with-deps",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"svelte.svelte-vscode",
+				"esbenp.prettier-vscode",
+				"dbaeumer.vscode-eslint"
+			]
+		}
+	}
+}

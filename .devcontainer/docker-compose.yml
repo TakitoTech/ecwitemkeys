@@ -1,0 +1,44 @@
+# Compose orchestrator for the dev container.
+#
+# The `app` service is what devcontainer.json attaches to (see `service: app`).
+# It still builds the custom image from ./Dockerfile — compose here just wraps
+# that build so additional services (db, cache, ...) can be added below and share
+# a network with the dev container.
+#
+# Works with Docker Compose or Podman (podman-compose, or `docker compose` pointed
+# at the rootless podman socket). See devcontainer.json for the podman CLI note.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Rootless Docker/Podman on this host: container root maps to the unprivileged
+    # host user, and a non-root container user cannot write the bind-mounted source.
+    user: root
+    # SELinux (Fedora) blocks bind mounts without relabeling; disable labeling so
+    # the workspace mount works (matches the old runArgs). Under Podman you can
+    # instead append `:Z` to the volume and drop this.
+    security_opt:
+      - label=disable
+    volumes:
+      # Bind the repository into the container. With the Dockerfile-only flow the
+      # dev containers CLI did this implicitly; under compose it must be explicit.
+      - ..:/workspaces/ecwitemkeys:cached
+    # Keep the container alive; the dev containers CLI attaches and runs commands.
+    command: sleep infinity
+
+    # --- Add more services below and they'll share this compose project ---------
+    # depends_on:
+    #   - db
+
+  # db:
+  #   image: postgres:16
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_PASSWORD: dev
+  #   volumes:
+  #     - db-data:/var/lib/postgresql/data
+
+# volumes:
+#   db-data:
